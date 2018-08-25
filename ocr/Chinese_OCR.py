@@ -16,8 +16,8 @@ from PIL import Image
 import cv2
 from tensorflow.python.ops import control_flow_ops
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+#reload(sys)
+#sys.setdefaultencoding('utf-8')
 
 logger = logging.getLogger('Training a chinese write char recognition')
 logger.setLevel(logging.INFO)
@@ -27,10 +27,12 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 # 输入参数解析
+print("prepare parameter1...")
 tf.app.flags.DEFINE_boolean('random_flip_up_down', False, "Whether to random flip up down")
 tf.app.flags.DEFINE_boolean('random_brightness', True, "whether to adjust brightness")
 tf.app.flags.DEFINE_boolean('random_contrast', True, "whether to random constrast")
 
+print("prepare parameter2...")
 tf.app.flags.DEFINE_integer('charset_size', 3755, "Choose the first `charset_size` characters only.")
 tf.app.flags.DEFINE_integer('image_size', 64, "Needs to provide same value as in training.")
 tf.app.flags.DEFINE_boolean('gray', True, "whether to change the rbg to gray")
@@ -38,16 +40,19 @@ tf.app.flags.DEFINE_integer('max_steps', 16002, 'the max training steps ')
 tf.app.flags.DEFINE_integer('eval_steps', 100, "the step num to eval")
 tf.app.flags.DEFINE_integer('save_steps', 500, "the steps to save")
 
+print("prepare parameter3...")
 tf.app.flags.DEFINE_string('checkpoint_dir', './checkpoint/', 'the checkpoint dir')
 tf.app.flags.DEFINE_string('train_data_dir', './dataset/train/', 'the train dataset dir')
 tf.app.flags.DEFINE_string('test_data_dir', './dataset/test/', 'the test dataset dir')
 tf.app.flags.DEFINE_string('log_dir', './log', 'the logging dir')
 
+print("prepare parameter4...")
 tf.app.flags.DEFINE_boolean('restore', False, 'whether to restore from checkpoint')
 tf.app.flags.DEFINE_boolean('epoch', 1, 'Number of epoches')
-tf.app.flags.DEFINE_boolean('batch_size', 128, 'Validation batch size')
+tf.app.flags.DEFINE_integer('batch_size', 128, 'Validation batch size')
 tf.app.flags.DEFINE_string('mode', 'validation', 'Running mode. One of {"train", "valid", "test"}')
 
+print("prepare parameters finished.")
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
 FLAGS = tf.app.flags.FLAGS
 
@@ -317,10 +322,10 @@ def binary_pic(name_list):
     for image in name_list:
         temp_image = cv2.imread(image)
         #print image
-        GrayImage=cv2.cvtColor(temp_image,cv2.COLOR_BGR2GRAY) 
+        GrayImage=cv2.cvtColor(temp_image,cv2.COLOR_BGR2GRAY)
         ret,thresh1=cv2.threshold(GrayImage,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         single_name = image.split('t/')[1]
-        print single_name
+        print(single_name)
         cv2.imwrite('../data/tmp/'+single_name,thresh1)
 
 # 获取汉字label映射表
@@ -340,7 +345,7 @@ def inference(name_list):
         temp_image = np.asarray(temp_image) / 255.0
         temp_image = temp_image.reshape([-1, 64, 64, 1])
         image_set.append(temp_image)
-        
+
     # allow_soft_placement 如果你指定的设备不存在，允许TF自动分配设备
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,allow_soft_placement=True)) as sess:
         logger.info('========start inference============')
@@ -350,7 +355,7 @@ def inference(name_list):
         saver = tf.train.Saver()
         # 自动获取最后一次保存的模型
         ckpt = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
-        if ckpt:       
+        if ckpt:
             saver.restore(sess, ckpt)
         val_list=[]
         idx_list=[]
@@ -392,12 +397,12 @@ def main(_):
             candidate2 = final_predict_index[i][0][1]
             candidate3 = final_predict_index[i][0][2]
             final_reco_text.append(label_dict[int(candidate1)])
-            logger.info('[the result info] image: {0} predict: {1} {2} {3}; predict index {4} predict_val {5}'.format(name_list[i], 
+            logger.info('[the result info] image: {0} predict: {1} {2} {3}; predict index {4} predict_val {5}'.format(name_list[i],
                 label_dict[int(candidate1)],label_dict[int(candidate2)],label_dict[int(candidate3)],final_predict_index[i],final_predict_val[i]))
         print ('=====================OCR RESULT=======================\n')
         # 打印出所有识别出来的结果（取top 1）
         for i in range(len(final_reco_text)):
-           print final_reco_text[i], 
+           print(final_reco_text[i], end='')
 
 if __name__ == "__main__":
     tf.app.run()
